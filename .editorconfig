@@ -1,0 +1,28 @@
+# EditorConfig — https://editorconfig.org
+# FiveM 画像アップローダー（GitHub Pages フロント + Cloudflare Worker）向け
+root = true
+
+# 全ファイル共通
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Web フロント / Worker（HTML・CSS・JS）
+[*.{html,css,js}]
+indent_size = 2
+
+# Cloudflare Wrangler 設定
+[*.toml]
+indent_size = 2
+
+# Markdown（末尾スペースは改行の意味を持つため保持）
+[*.md]
+trim_trailing_whitespace = false
+
+# Windows 由来のバッチ系は CRLF
+[*.{bat,cmd}]
+end_of_line = crlf
