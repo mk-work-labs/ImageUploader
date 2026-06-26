@@ -3,6 +3,7 @@ main = "src/index.js"
 compatibility_date = "2024-11-01"
 
 [vars]
-# デプロイ後に確定するGithubPagesのURLを入れる
-ALLOWED_ORIGIN = ""
+# GitHub Pages の「オリジン」のみ（パス・末尾スラッシュは付けない）。
+# ブラウザの Origin ヘッダはスキーム+ホストだけなので、パスを付けると CORS で一致せず弾かれる。
+ALLOWED_ORIGIN = "https://mk-work-labs.github.io"
 UPLOAD_FOLDER = "/fivem"
