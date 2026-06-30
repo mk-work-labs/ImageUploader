@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- タイトル/見出しは app.js が STORE_NAME から設定する -->
+    <title>画像アップローダー</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <header>
+      <p class="back"><a href="../">← 店舗一覧</a></p>
+      <h1>画像アップローダー</h1>
+    </header>
+
+    <section class="uploader">
+      <input type="file" id="file" accept="image/*" />
+      <button id="upload">アップロード</button>
+      <span id="status" class="status"></span>
+    </section>
+
+    <section class="gallery">
+      <div class="gallery-head">
+        <h2>アップロード済み画像</h2>
+        <button id="reload" class="reload">更新</button>
+      </div>
+      <div id="grid" class="grid"></div>
+    </section>
+
+    <!-- プレビュー用モーダル -->
+    <div id="modal" class="modal">
+      <div class="modal-box">
+        <button id="modal-close" class="modal-close">×</button>
+        <img id="modal-img" class="modal-img" alt="preview" />
+        <div class="url-row">
+          <input id="url-input" type="text" readonly />
+          <button id="copy">URLをコピー</button>
+          <button id="delete" class="delete">削除</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../config.common.js"></script>
+    <script src="config.js"></script>
+    <script src="../app.js"></script>
+  </body>
+</html>

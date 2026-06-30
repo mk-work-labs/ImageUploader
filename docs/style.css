@@ -57,3 +57,14 @@ h2 { font-size: 15px; }
   flex: 1; background: #11151c; color: #e7ecf3;
   border: 1px solid #232a35; border-radius: 6px; padding: 8px;
 }
+
+/* 店舗一覧（ランディング）と戻りリンク */
+.back { margin: 0 0 8px; font-size: 13px; }
+.back a { color: #9aa7b8; text-decoration: none; }
+.back a:hover { color: #e7ecf3; }
+.stores { list-style: none; margin: 0; padding: 20px 24px; display: grid; gap: 10px; }
+.stores a {
+  display: block; background: #1b212b; border: 1px solid #232a35;
+  border-radius: 8px; padding: 16px; color: #e7ecf3; text-decoration: none; font-size: 15px;
+}
+.stores a:hover { border-color: #3a7afe; }

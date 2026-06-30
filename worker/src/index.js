@@ -44,9 +44,21 @@ export default {
       return Response.json({ token, expire, signature }, { headers });
     }
 
-    // 専用フォルダの画像一覧をPrivate Keyで代理取得
+    // 店舗フォルダの画像一覧をPrivate Keyで代理取得
     if (url.pathname === "/list") {
-      const folder = env.UPLOAD_FOLDER || "/";
+      // 許可リスト（wrangler.toml の ALLOWED_FOLDERS）に含まれるフォルダのみ受け付ける。
+      // 任意フォルダを渡されて他店舗・他フォルダを列挙されるのを防ぐ。
+      const allowed = (env.ALLOWED_FOLDERS || "/")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const folder = url.searchParams.get("folder") || allowed[0];
+      if (!allowed.includes(folder)) {
+        return Response.json(
+          { error: "folder not allowed" },
+          { status: 403, headers },
+        );
+      }
       const apiUrl =
         `${LIST_URL}?path=${encodeURIComponent(folder)}` +
         `&sort=DESC_CREATED&limit=100&fileType=image`;

@@ -118,7 +118,9 @@ uploadBtn.addEventListener("click", async () => {
 async function loadGallery() {
   grid.innerHTML = "<p class='hint'>読み込み中...</p>";
   try {
-    const r = await fetch(`${cfg.WORKER_BASE_URL}/list`);
+    const r = await fetch(
+      `${cfg.WORKER_BASE_URL}/list?folder=${encodeURIComponent(cfg.UPLOAD_FOLDER)}`
+    );
     if (!r.ok) throw new Error("一覧取得に失敗 (" + r.status + ")");
     const data = await r.json();
     const tombs = loadTombstones();
@@ -218,6 +220,13 @@ deleteBtn.addEventListener("click", async () => {
 });
 
 reloadBtn.addEventListener("click", loadGallery);
+
+// 店舗名をタイトル・見出しに反映（config.js の STORE_NAME 由来）
+if (cfg.STORE_NAME) {
+  document.title = `${cfg.STORE_NAME} 画像アップローダー`;
+  const h = document.querySelector("header h1");
+  if (h) h.textContent = `${cfg.STORE_NAME} 画像アップローダー`;
+}
 
 // 初期表示
 loadGallery();
