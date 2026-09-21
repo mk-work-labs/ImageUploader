@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ガチャシミュレーター スモークテスト</title>
+    <style>
+      body { background: #11151c; color: #e7ecf3; font-family: system-ui, sans-serif; margin: 0; padding: 20px; }
+      h1 { font-size: 16px; }
+      #summary { font-size: 15px; margin: 12px 0; }
+      #out { font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+      .ng { color: #e0443e; }
+      #stage { display: none; }
+    </style>
+  </head>
+  <body>
+    <h1>ガチャシミュレーター スモークテスト</h1>
+    <p id="summary">実行中...</p>
+    <pre id="out"></pre>
+    <!-- 実ページの DOM をここに読み込んで操作する（画面には出さない） -->
+    <div id="stage"></div>
+    <script>
+      // docs/gacha/ の実ファイルをそのまま読み込んで自動操作する。
+      // リポジトリ直下で `python3 -m http.server 8000` を動かし、
+      // http://localhost:8000/tests/gacha-smoke.html を開くこと。
+      const BASE = "../docs/gacha/";
+      const KEY = "gachaSimulatorState";
+      const log = [];
+      let ng = 0;
+      function ok(name, cond, extra) {
+        if (!cond) ng++;
+        log.push((cond ? "PASS " : "FAIL ") + name + (extra ? "  [" + extra + "]" : ""));
+      }
+      window.onerror = function (m, s, l) { ng++; log.push("ERROR " + m + " @" + s + ":" + l); };
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+      (async function () {
+        // 実際の設定を壊さないように退避してから始める
+        const backup = localStorage.getItem(KEY);
+        try {
+          localStorage.removeItem(KEY);
+          const html = await (await fetch(BASE + "index.html")).text();
+          const doc = new DOMParser().parseFromString(html, "text/html");
+          document.getElementById("stage").innerHTML = doc.body.innerHTML;
+          document.getElementById("stage").style.display = "none";
+          for (const src of ["gacha.store.js", "gacha.draw.js", "gacha.js"]) {
+            await new Promise((res, rej) => {
+              const s = document.createElement("script");
+              s.src = BASE + src; s.onload = res; s.onerror = rej;
+              document.head.appendChild(s);
+            });
+          }
+
+          const $ = (id) => document.getElementById(id);
+          const rows = () => $("item-body").querySelectorAll("tr.item-row");
+          const chips = () => $("result-list").querySelectorAll(".chip");
+
+          // --- 抽選ロジック単体 ---
+          const t = GachaDraw.buildTable([
+            { id: "a", rarity: "SSR", name: "A", rate: 1.5 },
+            { id: "b", rarity: "SR", name: "B", rate: 8.5 },
+            { id: "c", rarity: "R", name: "C", rate: 90 },
+            { id: "d", rarity: "N", name: "D", rate: 0 },
+          ]);
+          ok("0%は抽選対象外", t.ids.length === 3 && t.total === 100);
+          ok("pickIndex 下端", GachaDraw.pickIndex(t, 0) === 0);
+          ok("pickIndex 上端", GachaDraw.pickIndex(t, t.total - 1e-9) === 2);
+          const big = GachaDraw.drawMany(t, 200000, 0);
+          ok("当選数合計=試行回数", big.counts.reduce((a, b) => a + b, 0) === 200000);
+          const pct = big.counts.map((c) => (c / 200000) * 100);
+          ok("実測≒設定(±0.3pt)", pct.every((p, i) => Math.abs(p - t.rates[i]) < 0.3), pct.map((p) => p.toFixed(3)).join("/"));
+          const half = GachaDraw.drawMany(GachaDraw.buildTable([{ id: "a", rate: 0.75 }, { id: "b", rate: 4.25 }, { id: "c", rate: 45 }]), 200000, 0);
+          ok("合計50%でも比率は同じ", Math.abs((half.counts[0] / 200000) * 100 - 1.5) < 0.3);
+
+          // --- 初期表示 ---
+          ok("初期サンプル3件", rows().length === 3, "rows=" + rows().length);
+          ok("合計100%表示", $("rate-total").textContent === "合計 100%", $("rate-total").textContent);
+          ok("100%時は警告なし", $("rate-warn").textContent === "");
+          ok("回すボタン有効", $("spin").disabled === false);
+          ok("履歴プレースホルダ", $("history-list").textContent.indexOf("履歴はまだありません") >= 0);
+
+          // --- 10連 ---
+          document.querySelector('.preset[data-count="10"]').click();
+          await sleep(60);
+          ok("10連で10チップ", chips().length === 10, "chips=" + chips().length);
+          ok("通算10回", $("total-count").textContent === "通算 10 回", $("total-count").textContent);
+          ok("履歴1件", $("history-list").querySelectorAll("li").length === 1);
+          ok("履歴の時刻が2桁", /^\d{2}:\d{2}:\d{2}$/.test($("history-list").querySelector(".history-time").textContent), $("history-list").querySelector(".history-time").textContent);
+          ok("所要時間を表示", /10回を .*ms で抽選しました/.test($("spin-status").textContent), $("spin-status").textContent);
+
+          // --- 結果表示の上限 ---
+          $("spin-count").value = "1000";
+          $("spin").click();
+          await sleep(150);
+          ok("チップ上限100", chips().length === 100, "chips=" + chips().length);
+          ok("通算1010回", $("total-count").textContent === "通算 1,010 回", $("total-count").textContent);
+          ok("履歴2件", $("history-list").querySelectorAll("li").length === 2);
+          const hits = [...$("stats-body").querySelectorAll("tr")].filter((tr) => tr.children.length === 6)
+            .map((tr) => Number(tr.children[3].textContent.replace(/,/g, "")));
+          ok("統計の当選数合計=通算", hits.reduce((a, b) => a + b, 0) === 1010, hits.join("/"));
+          ok("レアリティ別集計", $("rarity-summary").textContent.indexOf("SSR") >= 0);
+
+          // --- 合計が100%でないとき ---
+          const rateInput = rows()[2].querySelector(".rate-input");
+          rateInput.value = "88";
+          rateInput.dispatchEvent(new Event("input", { bubbles: true }));
+          await sleep(10);
+          ok("合計98%表示", $("rate-total").textContent === "合計 98%", $("rate-total").textContent);
+          ok("警告が出る", $("rate-warn").textContent.indexOf("正規化して抽選します") >= 0, $("rate-warn").textContent);
+          ok("それでも回せる", $("spin").disabled === false);
+          ok("確率変更で統計リセット", $("total-count").textContent === "通算 0 回", $("total-count").textContent);
+
+          // --- 負の確率は0に丸める ---
+          rateInput.value = "-5";
+          rateInput.dispatchEvent(new Event("input", { bubbles: true }));
+          await sleep(10);
+          const setPctsNeg = [...$("stats-body").querySelectorAll("tr")].filter((tr) => tr.children.length === 6)
+            .map((tr) => Number(tr.children[2].textContent));
+          ok("負の確率は0扱い", $("rate-total").textContent === "合計 10%", $("rate-total").textContent);
+          ok("設定%の合計は100", Math.abs(setPctsNeg.reduce((a, b) => a + b, 0) - 100) < 0.01, setPctsNeg.join("/"));
+          rateInput.value = "88";
+          rateInput.dispatchEvent(new Event("input", { bubbles: true }));
+          await sleep(10);
+
+          // --- 名前変更では統計を維持し、文字列はエスケープされる ---
+          $("spin-count").value = "100";
+          $("spin").click();
+          await sleep(60);
+          const nameInput = rows()[0].querySelector('input[data-field="name"]');
+          nameInput.value = "<script>alert(1)<\/script>";
+          nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+          await sleep(10);
+          ok("名前変更では統計維持", $("total-count").textContent === "通算 100 回", $("total-count").textContent);
+          ok("スクリプトが挿入されない", $("stats-body").querySelectorAll("script").length === 0);
+          ok("名前はテキスト表示", $("stats-body").textContent.indexOf("<script>alert(1)") >= 0);
+          const setPcts = [...$("stats-body").querySelectorAll("tr")].filter((tr) => tr.children.length === 6)
+            .map((tr) => tr.children[2].textContent);
+          ok("設定%が正規化値", setPcts[2] === "89.796", setPcts.join("/"));
+
+          // --- 保存 ---
+          await sleep(400);
+          const saved = JSON.parse(localStorage.getItem(KEY));
+          ok("設定が保存される", saved.gachas[0].items[2].rate === 88 && saved.gachas[0].items[0].name.indexOf("alert(1)") >= 0);
+
+          // --- ガチャ管理 ---
+          window.prompt = () => "テストガチャ";
+          $("gacha-add").click();
+          await sleep(10);
+          ok("ガチャ2件", $("gacha-select").options.length === 2);
+          ok("新規は1件100%", rows().length === 1 && $("rate-total").textContent === "合計 100%", $("rate-total").textContent);
+          ok("切替で統計リセット", $("total-count").textContent === "通算 0 回");
+          $("gacha-copy").click();
+          await sleep(10);
+          ok("複製でガチャ3件", $("gacha-select").options.length === 3);
+          ok("セレクトの選択が同期", $("gacha-select").value !== "");
+
+          // --- 抽選できない状態 ---
+          rows()[0].querySelector(".row-delete").click();
+          await sleep(10);
+          ok("アイテム0件", rows().length === 0);
+          ok("0件で抽選不可", $("spin").disabled === true);
+          ok("0件の警告", $("rate-warn").textContent.indexOf("1件以上登録") >= 0);
+          $("item-add").click();
+          await sleep(10);
+          ok("確率0のみで抽選不可", $("spin").disabled === true);
+          ok("0%の警告", $("rate-warn").textContent.indexOf("0% より大きいアイテムがない") >= 0);
+
+          // --- 再読込 ---
+          ok("再読込でガチャ3件", GachaStore.loadState().gachas.length === 3);
+          $("stats-reset").click();
+          await sleep(10);
+          ok("統計リセットボタン", $("history-list").textContent.indexOf("履歴はまだありません") >= 0);
+        } catch (e) {
+          ng++;
+          log.push("EXCEPTION " + (e && e.stack ? e.stack : e));
+        } finally {
+          // 退避しておいた実データを戻す
+          if (backup === null) localStorage.removeItem(KEY);
+          else localStorage.setItem(KEY, backup);
+        }
+        const sum = document.getElementById("summary");
+        sum.textContent = ng === 0 ? "全 " + log.length + " 項目 PASS" : ng + " 件 FAIL / 全 " + log.length + " 項目";
+        if (ng > 0) sum.className = "ng";
+        document.getElementById("out").textContent = log.join("\n");
+        document.title = ng === 0 ? "PASS" : "FAIL";
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ガチャシミュレーター</title>
+    <link rel="stylesheet" href="gacha.css" />
+  </head>
+  <body>
+    <header>
+      <p class="back"><a href="../">← トップ</a></p>
+      <h1>ガチャシミュレーター</h1>
+    </header>
+
+    <!-- ガチャの選択と管理 -->
+    <section class="panel toolbar">
+      <label for="gacha-select">ガチャ</label>
+      <select id="gacha-select"></select>
+      <button id="gacha-add" class="sub">新規</button>
+      <button id="gacha-rename" class="sub">名前変更</button>
+      <button id="gacha-copy" class="sub">複製</button>
+      <button id="gacha-delete" class="delete">削除</button>
+    </section>
+
+    <!-- アイテムと確率の編集 -->
+    <section class="panel editor">
+      <div class="panel-head">
+        <h2>アイテムと確率</h2>
+        <span id="rate-total" class="rate-total"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="item-table">
+          <thead>
+            <tr>
+              <th class="col-rarity">レア</th>
+              <th>アイテム名</th>
+              <th class="col-rate">確率(%)</th>
+              <th class="col-act"></th>
+            </tr>
+          </thead>
+          <tbody id="item-body"></tbody>
+        </table>
+      </div>
+      <!-- レアリティは自由入力。よく使う値だけ候補として出す -->
+      <datalist id="rarity-presets">
+        <option value="UR"></option>
+        <option value="SSR"></option>
+        <option value="SR"></option>
+        <option value="R"></option>
+        <option value="N"></option>
+      </datalist>
+      <div class="editor-foot">
+        <button id="item-add" class="sub">+ アイテムを追加</button>
+      </div>
+      <p id="rate-warn" class="warn"></p>
+    </section>
+
+    <!-- 抽選 -->
+    <section class="panel spin">
+      <div class="spin-row">
+        <button class="preset" data-count="1">1連</button>
+        <button class="preset" data-count="10">10連</button>
+        <button class="preset" data-count="100">100連</button>
+        <button class="preset" data-count="1000">1000連</button>
+        <label for="spin-count">任意</label>
+        <input id="spin-count" type="number" min="1" max="1000000" step="1" value="5000" />
+        <button id="spin">回す</button>
+        <button id="stats-reset" class="sub">統計リセット</button>
+      </div>
+      <p id="spin-status" class="status"></p>
+    </section>
+
+    <!-- 直近の排出（10連の中身を見るための一覧） -->
+    <section class="panel results">
+      <div class="panel-head">
+        <h2>今回の結果</h2>
+        <span class="hint">直近100件まで表示</span>
+      </div>
+      <div id="result-list" class="result-list"></div>
+    </section>
+
+    <!-- 設定確率と実測確率の比較 -->
+    <section class="panel stats">
+      <div class="panel-head">
+        <h2>統計</h2>
+        <span id="total-count" class="hint"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th class="col-rarity">レア</th>
+              <th>アイテム</th>
+              <th class="num">設定%</th>
+              <th class="num">当選数</th>
+              <th class="num">実測%</th>
+              <th class="num">差分</th>
+            </tr>
+          </thead>
+          <tbody id="stats-body"></tbody>
+        </table>
+      </div>
+      <p class="hint gauge-legend">ゲージは中央が差分0。右（緑）に伸びれば出過ぎ、左（赤）に伸びれば出不足。</p>
+      <p id="rarity-summary" class="rarity-summary"></p>
+    </section>
+
+    <!-- ロット単位のログ -->
+    <section class="panel history">
+      <div class="panel-head">
+        <h2>履歴</h2>
+        <span class="hint">直近50ロット</span>
+      </div>
+      <ul id="history-list" class="history-list"></ul>
+    </section>
+
+    <script src="gacha.store.js"></script>
+    <script src="gacha.draw.js"></script>
+    <script src="gacha.js"></script>
+  </body>
+</html>

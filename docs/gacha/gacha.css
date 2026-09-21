@@ -1,0 +1,117 @@
+/* ガチャシミュレーター専用。docs/style.css とは独立（アップローダー側に影響を出さないため）。 */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #11151c;
+  color: #e7ecf3;
+}
+header { padding: 16px 24px; border-bottom: 1px solid #232a35; }
+h1 { font-size: 18px; margin: 0; }
+h2 { font-size: 15px; margin: 0; }
+.back { margin: 0 0 8px; font-size: 13px; }
+.back a { color: #9aa7b8; text-decoration: none; }
+.back a:hover { color: #e7ecf3; }
+.hint { color: #9aa7b8; font-size: 13px; }
+.status { color: #9aa7b8; font-size: 13px; margin: 10px 0 0; min-height: 18px; }
+
+button {
+  background: #3a7afe; color: #fff; border: 0; border-radius: 6px;
+  padding: 8px 16px; cursor: pointer; font-size: 14px;
+}
+button:disabled { opacity: .5; cursor: default; }
+.sub { background: #2b3340; }
+.sub:hover:enabled { background: #384254; }
+.delete { background: #e0443e; }
+.delete:hover:enabled { background: #c93a35; }
+.preset { background: #2b3340; padding: 8px 12px; }
+.preset:hover:enabled { background: #384254; }
+
+input, select {
+  background: #11151c; color: #e7ecf3;
+  border: 1px solid #232a35; border-radius: 6px; padding: 8px; font-size: 14px;
+}
+input:focus, select:focus { outline: none; border-color: #3a7afe; }
+
+/* --- パネル（各セクション） --- */
+.panel {
+  margin: 16px 24px;
+  background: #1b212b; border: 1px solid #232a35; border-radius: 10px; padding: 16px;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 12px;
+}
+
+/* --- ガチャ選択 --- */
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.toolbar label { font-size: 13px; color: #9aa7b8; }
+.toolbar select { min-width: 180px; max-width: 100%; }
+
+/* --- 表（狭い画面では表だけを横スクロールさせ、ページ全体を横に伸ばさない） --- */
+.table-wrap { overflow-x: auto; }
+.item-table, .stats-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.item-table { min-width: 400px; }
+.stats-table { min-width: 520px; }
+.item-table th, .stats-table th {
+  text-align: left; font-weight: normal; font-size: 12px; color: #9aa7b8;
+  padding: 0 6px 6px; border-bottom: 1px solid #232a35;
+}
+.item-table td, .stats-table td { padding: 5px 6px; border-bottom: 1px solid #232a35; }
+.col-rarity { width: 84px; }
+.col-rate { width: 110px; }
+.col-act { width: 60px; }
+.num { text-align: right; }
+.item-table input { width: 100%; }
+.item-table .rate-input { text-align: right; }
+.item-table .row-delete { background: #2b3340; padding: 6px 10px; font-size: 13px; }
+.item-table .row-delete:hover { background: #e0443e; }
+.empty { color: #9aa7b8; font-size: 13px; padding: 12px 6px; }
+.editor-foot { margin-top: 12px; }
+.rate-total { font-size: 13px; color: #9aa7b8; }
+.rate-total.bad { color: #e0443e; }
+.warn { color: #e0443e; font-size: 13px; margin: 10px 0 0; min-height: 18px; }
+
+/* --- 抽選 --- */
+.spin-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.spin-row label { font-size: 13px; color: #9aa7b8; }
+#spin-count { width: 110px; text-align: right; }
+#stats-reset { margin-left: auto; }
+
+/* --- 今回の結果 --- */
+.result-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  background: #11151c; border: 1px solid #232a35; border-radius: 999px;
+  padding: 4px 10px; font-size: 13px; display: inline-flex; gap: 6px; align-items: center;
+}
+.rarity-tag { font-size: 11px; font-weight: bold; }
+
+/* --- 統計 --- */
+.stats-table .bar-cell { padding: 0 6px 8px; border-bottom: 1px solid #232a35; }
+/* 差分ゲージ。中央が差分0で、右に伸びれば出過ぎ、左に伸びれば出不足。 */
+.bar { position: relative; height: 6px; background: #11151c; border-radius: 3px; }
+.bar-fill { position: absolute; top: 0; height: 100%; border-radius: 3px; }
+.bar-fill.plus { background: #4caf7d; }
+.bar-fill.minus { background: #e0443e; }
+/* 差分0の基準線。バーの端と重なっても見えるよう前面に出す */
+.bar-mark {
+  position: absolute; left: 50%; top: -3px; width: 2px; height: 12px;
+  background: #e7ecf3; z-index: 1;
+}
+.gauge-legend { margin: 10px 0 0; }
+.diff-plus { color: #4caf7d; }
+.diff-minus { color: #e0443e; }
+.rarity-summary {
+  margin: 12px 0 0; font-size: 13px; color: #9aa7b8;
+  display: flex; flex-wrap: wrap; gap: 4px 14px;
+}
+
+/* --- 履歴 --- */
+.history-list { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.history-list li {
+  padding: 7px 0; border-bottom: 1px solid #232a35;
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.history-time { color: #9aa7b8; }
+.history-count { color: #e7ecf3; }
+.history-body { color: #9aa7b8; }

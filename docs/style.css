@@ -68,3 +68,6 @@ h2 { font-size: 15px; }
   border-radius: 8px; padding: 16px; color: #e7ecf3; text-decoration: none; font-size: 15px;
 }
 .stores a:hover { border-color: #3a7afe; }
+
+/* ランディングのツール見出し */
+.tools-head { margin: 20px 24px 0; }
